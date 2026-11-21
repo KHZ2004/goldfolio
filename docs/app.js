@@ -9,7 +9,7 @@ const date=s=>new Date(s).toLocaleString('en-MY',{timeZone:'Asia/Kuala_Lumpur',d
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function message(text){$('#message').textContent=text;$('#message').hidden=!text;}
 async function api(path,method="GET",body){return browserApi(path,method,body);}
-async function load(){try{[market,state]=await Promise.all([api('market'),api('portfolio')]);render();message(market.error?'Price refresh unavailable. '+(market.quote?'Showing the last saved quote. ':'')+market.error:'');}catch(e){message('Cannot reach the server. '+e.message);}}
+async function load(){try{market=await api('market');state=await api('portfolio');render();message(market.error?'Price refresh unavailable. '+(market.quote?'Showing the last saved quote. ':'')+market.error:'');}catch(e){message('Cannot reach the server. '+e.message);}}
 function render(){
  const q=market.quote,p=q?.buyPrice,t=totals(state.lots,p);
  $('#spot').textContent=money(q?.sellPrice);$('#buyback-price').textContent='Buyback reference: '+money(q?.buyPrice)+' / gram';
@@ -62,4 +62,5 @@ await load();setInterval(load,60000);document.addEventListener('visibilitychange
 
 window.addEventListener('resize',chart);
 
-document.querySelector('#import-backup').onchange=async e=>{try{const file=e.target.files[0];if(file){importBackup(JSON.parse(await file.text()));await load();}}catch(err){alert(err.message);}finally{e.target.value='';}};
+document.querySelector('#import-backup').onchange=async e=>{try{const file=e.target.files[0];if(file){await importBackup(JSON.parse(await file.text()));await load();}}catch(err){alert(err.message);}finally{e.target.value='';}};
+window.addEventListener('storage',async e=>{if(e.key==='goldfolio-pages-portfolio-v1'){try{state=await api('portfolio');render();}catch(err){message(err.message);}}});
